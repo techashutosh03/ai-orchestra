@@ -191,7 +191,7 @@ const createWindow = async () => {
 	const dockIcon = nativeImage.createFromPath(getAssetPath('icon.png'));
 
 	app.dock?.setIcon(dockIcon); // todo: if electronStore preferences say to hide icon, hide icon with app.dock.setMenu(Menu.buildFromTemplate([])); maybe https://stackoverflow.com/questions/59668664/how-to-avoid-showing-a-dock-icon-while-my-electron-app-is-launching-on-macos
-	app.name = 'God Mode';
+	app.name = 'AI Orchestra';
 
 	mainWindow.loadURL(resolveHtmlPath('index.html'));
 

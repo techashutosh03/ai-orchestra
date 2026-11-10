@@ -5,31 +5,43 @@ class OpenAI extends Provider {
 	static fullName = 'OpenAI ChatGPT';
 	static shortName = 'ChatGPT';
 
-	static url = 'https://chat.openai.com/?model=gpt-4-code-interpreter'; // TODO - let people switch
+	static url = 'https://chatgpt.com/';
 
 	static handleInput(input) {
-		const fullName = this.fullName;
-		this.getWebview().executeJavaScript(`{
-        var inputElement = document.querySelector('#prompt-textarea');
+		const webview = this.getWebview();
+		if (!webview) return;
+		try {
+			webview.getWebContentsId();
+		} catch (e) {
+			return;
+		}
+		webview.executeJavaScript(`{
+        var inputElement = document.querySelector('#prompt-textarea') || document.querySelector('div[contenteditable="true"]');
         if (inputElement) {
-          const inputEvent = new Event('input', { bubbles: true });
-          inputElement.value = \`${input}\`; // must be escaped backticks to support multiline
-          inputElement.dispatchEvent(inputEvent);
+          if (inputElement.tagName === 'TEXTAREA') {
+            inputElement.value = \`${input}\`;
+            inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+          } else {
+            inputElement.textContent = \`${input}\`;
+            inputElement.dispatchEvent(new InputEvent('input', { bubbles: true }));
+          }
         }
-      }`);
+      }`).catch(() => {});
 	}
 
 	static handleSubmit() {
-		this.getWebview().executeJavaScript(`{
-        // var btn = document.querySelector("textarea[placeholder*='Send a message']+button"); // this one broke recently .. note that they add another div (for the file upload) in code interpreter mode
-        var btn = document.querySelector('button[data-testid="send-button"]');
+		const webview = this.getWebview();
+		if (!webview) return;
+		webview.executeJavaScript(`{
+        var btn = document.querySelector('button[data-testid="send-button"]') ||
+                  document.querySelector('button[aria-label="Send prompt"]') ||
+                  document.querySelector('button[data-testid="fruitjuice-send-button"]');
         if (btn) {
             btn.focus();
             btn.disabled = false;
             btn.click();
         }
-    }
-      `);
+    }`).catch(() => {});
 	}
 
 	static handleCss() {

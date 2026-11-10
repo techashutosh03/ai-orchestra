@@ -59,10 +59,7 @@ export function BrowserPane({
 		fullName: 'Select a provider',
 	} as ProviderInterface;
 
-	function onDragEnd(result: {
-		source: { index: number };
-		destination: { index: number };
-	}) {
+	function onDragEnd(result: any) {
 		// dropped outside the list
 		if (!result.destination) return;
 
@@ -77,11 +74,8 @@ export function BrowserPane({
 	// Normally you would want to split things out into separate components.
 	// But in this example everything is just done in one place for simplicity
 	return (
-		<DragDropContext onDragEnd={onDragEnd}>
-			<Droppable droppableId="droppable">
-				{(provided2, snapshot) => (
-					<div className="flex flex-col justify-between">
-						<Menu as="div" className="relative inline-block text-left">
+		<div className="flex flex-col justify-between">
+			<Menu as="div" className="relative inline-block text-left">
 							<div>
 								<Menu.Button className="inline-flex justify-center gap-x-1.5 rounded-md px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
 									<Bars2Icon
@@ -111,13 +105,16 @@ export function BrowserPane({
 										</Menu.Item>
 									</div>
 									<div className="py-0">
-										<div
-											{...provided2.droppableProps}
-											ref={provided2.innerRef}
-											className={`w-full ${
-												snapshot.isDraggingOver ? 'bg-blue-200' : 'bg-white'
-											}`}
-										>
+										<DragDropContext onDragEnd={onDragEnd}>
+											<Droppable droppableId="droppable">
+												{(provided2, snapshot) => (
+													<div
+														{...provided2.droppableProps}
+														ref={provided2.innerRef}
+														className={`w-full ${
+															snapshot.isDraggingOver ? 'bg-blue-200' : 'bg-white'
+														}`}
+													>
 											{paneList?.map((item, index) => (
 												<Draggable
 													key={item.webviewId}
@@ -185,6 +182,9 @@ export function BrowserPane({
 											))}
 											{provided2.placeholder}
 										</div>
+									)}
+								</Droppable>
+							</DragDropContext>
 										<Menu.Item>
 											{({ active }) => (
 												<div className="px-4 pb-2">
@@ -290,9 +290,6 @@ export function BrowserPane({
 							</Transition>
 						</Menu>
 					</div>
-				)}
-			</Droppable>
-		</DragDropContext>
 	);
 }
 

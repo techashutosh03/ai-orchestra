@@ -163,7 +163,7 @@ export default function SettingsMenu({
 							className="text-sm font-medium leading-6 text-gray-900"
 							passive
 						>
-							Automatically Open GodMode at Login
+							Automatically Open AI Orchestra at Login
 						</Switch.Label>
 					</span>
 					<Switch

@@ -18,6 +18,7 @@ import Poe from 'providers/poe';
 import InflectionPi from 'providers/inflection';
 import StableChat from 'providers/stablechat';
 import Falcon180BSpace from 'providers/falcon180bspace';
+import DeepSeek from '../providers/deepseek';
 
 export const allProviders = [
 	OpenAi,
@@ -25,6 +26,7 @@ export const allProviders = [
 	Bing,
 	Claude,
 	Claude2,
+	DeepSeek,
 	YouChat,
 	Perplexity,
 	Phind,

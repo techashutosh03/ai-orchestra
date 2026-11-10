@@ -2,35 +2,49 @@ const Provider = require('./provider');
 
 class Bard extends Provider {
 	static webviewId = 'webviewBARD';
-	static fullName = 'Google Bard';
-	static shortName = 'Bard';
+	static fullName = 'Google Gemini';
+	static shortName = 'Gemini';
 
-	static url = 'https://bard.google.com';
+	static url = 'https://gemini.google.com/app';
 
 	static handleInput(input) {
-		const fullName = this.fullName;
-		this.getWebview().executeJavaScript(`{
-      var inputElement = document.querySelector(".ql-editor.textarea");
+		const webview = this.getWebview();
+		if (!webview) return;
+		try {
+			webview.getWebContentsId();
+		} catch (e) {
+			return;
+		}
+		webview.executeJavaScript(`{
+      var inputElement = document.querySelector(".ql-editor") ||
+                         document.querySelector("rich-textarea div[contenteditable='true']") ||
+                         document.querySelector("div[contenteditable='true']");
       if (inputElement) {
-        const inputEvent = new Event('input', { bubbles: true });
-        inputElement.value = \`${input}\`; // must be escaped backticks to support multiline
-        inputElement.dispatchEvent(inputEvent);
-        // bard is weird
-        inputElement.querySelector('p').textContent = \`${input}\`
+        inputElement.focus();
+        var p = inputElement.querySelector('p');
+        if (p) {
+          p.textContent = \`${input}\`;
+        } else {
+          inputElement.textContent = \`${input}\`;
+        }
+        inputElement.dispatchEvent(new InputEvent('input', { bubbles: true }));
       }
-    }
-      `);
+    }`).catch(() => {});
 	}
 
 	static handleSubmit() {
-		this.getWebview().executeJavaScript(`{
-      var btn = document.querySelector("button[aria-label*='Send message']");
+		const webview = this.getWebview();
+		if (!webview) return;
+		webview.executeJavaScript(`{
+      var btn = document.querySelector("button[aria-label*='Send message']") ||
+                document.querySelector("button.send-button") ||
+                document.querySelector("button[aria-label*='Submit']");
       if (btn) {
-        btn.setAttribute("aria-disabled", "false"); // doesnt work alone
+        btn.setAttribute("aria-disabled", "false");
         btn.focus();
         btn.click();
       }
-    }`);
+    }`).catch(() => {});
 	}
 
 	static handleCss() {

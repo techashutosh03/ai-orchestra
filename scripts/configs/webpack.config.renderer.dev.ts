@@ -11,6 +11,8 @@ import baseConfig from './webpack.config.base';
 import webpackPaths from './webpack.paths';
 import checkNodeEnv from '../scripts/check-node-env';
 
+delete process.env.ELECTRON_RUN_AS_NODE;
+
 // When an ESLint server is running, we can't set the NODE_ENV so we'll check if it's
 // at the dev webpack config is not accidentally run in a production environment
 if (process.env.NODE_ENV === 'production') {
@@ -208,9 +210,12 @@ const configuration: webpack.Configuration = {
 					['--', ...process.env.MAIN_ARGS.matchAll(/"[^"]+"|[^\s"]+/g)].flat(),
 				);
 			}
+			const spawnEnv = { ...process.env };
+			delete spawnEnv.ELECTRON_RUN_AS_NODE;
 			spawn('npm', args, {
 				shell: true,
 				stdio: 'inherit',
+				env: spawnEnv,
 			})
 				.on('close', (code: number) => {
 					preloadProcess.kill();

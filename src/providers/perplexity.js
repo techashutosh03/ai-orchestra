@@ -44,9 +44,9 @@ class Perplexity extends Provider {
 			// Hide the "Try asking" segment
 			setTimeout(() => {
 				this.getWebview().insertCSS(`
-        body {
-					zoom: 80%;
-					font-size: small;
+        /* Hide cookie consent banner taking up space in narrow columns */
+        [class*="Cookie"], [id*="cookie"], [class*="cookie"] {
+          display: none !important;
         }
 
         .mt-lg {

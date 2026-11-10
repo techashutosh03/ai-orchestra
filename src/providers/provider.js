@@ -16,8 +16,10 @@ class Provider {
 	}
 
 	static setupCustomPasteBehavior() {
-		this.getWebview().addEventListener('dom-ready', () => {
-			this.getWebview().executeJavaScript(`{
+		const webview = this.getWebview();
+		if (!webview) return;
+		webview.addEventListener('dom-ready', () => {
+			webview.executeJavaScript(`{
 					document.addEventListener('paste', (event) => {
 					event.preventDefault();
 					var text = event.clipboardData.getData('text');
@@ -41,7 +43,7 @@ class Provider {
 					activeElement.value = activeElement.value.slice(0, start) + text + activeElement.value.slice(end);
 					activeElement.selectionStart = activeElement.selectionEnd = start + text.length;
 					});
-				}`);
+				}`).catch(() => {});
 		});
 	}
 

@@ -55,20 +55,53 @@ export default function Layout() {
 		(x) => !enabledProviders.includes(x),
 	);
 
+	const superpromptRef = React.useRef(superprompt);
+	superpromptRef.current = superprompt;
+
 	/*
 	 * Apply provider-specific CSS and custom paste behavior
 	 */
 	React.useEffect(() => {
+		const domReadyCleanups: Array<() => void> = [];
 		enabledProviders.forEach((provider) => {
 			provider.handleCss();
 			provider.setupCustomPasteBehavior();
+
+			const webview = provider.getWebview() as any;
+			if (webview) {
+				const onDomReady = () => {
+					if (superpromptRef.current) {
+						try {
+							provider.handleInput(superpromptRef.current.replace(/`/g, '\\`'));
+						} catch (err) {
+							// ignore
+						}
+					}
+				};
+				webview.addEventListener('dom-ready', onDomReady);
+				domReadyCleanups.push(() => {
+					webview.removeEventListener('dom-ready', onDomReady);
+				});
+			}
 		});
+		return () => {
+			domReadyCleanups.forEach((cleanup) => cleanup());
+		};
 	}, [enabledProviders]);
 
 	React.useEffect(() => {
+		if (!superprompt) return;
 		enabledProviders.forEach((provider) => {
 			// Call provider-specific CSS handling and custom paste setup
 			try {
+				const webview = provider.getWebview() as any;
+				if (!webview) return;
+				try {
+					webview.getWebContentsId();
+				} catch (e) {
+					// Webview is not ready yet; onDomReady listener will deliver the input when ready
+					return;
+				}
 				// regex to sanitize superprompt from backticks since we will put it into a template string
 				// solves https://github.com/smol-ai/GodMode/issues/218
 				provider.handleInput(superprompt.replace(/`/g, '\\`'));

@@ -43,14 +43,24 @@ class Claude2 extends Provider {
         .mx-4.md\:mx-12.mb-2.md\:mb-4.mt-2.w-auto {
           margin: 0 !important;
         }
+        /* prevent header overlap in narrow columns */
+        h1, h2, [class*="font-tiempos"] {
+          line-height: 1.25 !important;
+          margin-bottom: 0.75rem !important;
+        }
 
         `);
 			}, 1000);
 			setTimeout(() => {
-				this.getWebview().executeJavaScript(`{
+				const webview = this.getWebview();
+				if (!webview) return;
+				webview.executeJavaScript(`{
 				// hide welcome back title
-				document.querySelector('h2').style.display = 'none';
-				}`);
+				var h2 = document.querySelector('h2');
+				if (h2) {
+					h2.style.display = 'none';
+				}
+				}`).catch(() => {});
 			}, 1000);
 		});
 	}

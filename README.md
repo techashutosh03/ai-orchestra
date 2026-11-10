@@ -1,4 +1,4 @@
-# 🐣 GodMode - the smol AI Chat Browser
+# 🎻 AI Orchestra - Multi-Model AI Chat Browser
 
 This is a dedicated chat browser that only does one thing: help you quickly access **the full webapps** of ChatGPT, Claude 2, Perplexity, Bing and more **with a single keyboard shortcut (Cmd+Shift+G)**.
 

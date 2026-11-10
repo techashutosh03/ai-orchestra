@@ -1,9 +1,9 @@
 {
-	"name": "godmode",
-	"productName": "GodMode",
-	"version": "1.0.0-beta.9",
-	"author": "smol-ai",
-	"description": "Simultaneously chat with ChatGPT, Claude, Bing, Bard, Llama2, et al in a full chat browser, NO API",
+	"name": "ai-orchestra",
+	"productName": "AI Orchestra",
+	"version": "1.0.0",
+	"author": "techashutosh03",
+	"description": "Simultaneously chat with ChatGPT, Claude, Gemini, DeepSeek, Bing, and more in a full chat browser, NO API",
 	"main": "src/main/main.ts",
 	"scripts": {
 		"build": "npm run build:copy && concurrently \"npm run build:main\" \"npm run build:renderer\"",
@@ -57,7 +57,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/smol-ai/GodMode"
+		"url": "https://github.com/techashutosh03/ai-orchestra"
 	},
 	"devDependencies": {
 		"@electron/notarize": "^2.1.0",
@@ -205,13 +205,9 @@
 		],
 		"publish": {
 			"provider": "github",
-			"owner": "smol-ai",
-			"repo": "GodMode"
+			"owner": "techashutosh03",
+			"repo": "ai-orchestra"
 		}
-	},
-	"devEngines": {
-		"node": ">=18.x",
-		"npm": ">=7.x"
 	},
 	"electronmon": {
 		"patterns": [
