@@ -16,6 +16,8 @@ import {
 	ZoomInIcon,
 	ZoomOutIcon,
 	MagnifyingGlassIcon,
+	EnterFullScreenIcon,
+	Cross2Icon,
 } from '@radix-ui/react-icons';
 import { Input } from 'renderer/components/ui/input';
 import {
@@ -30,26 +32,28 @@ export default function Pane({
 	number,
 	currentlyOpenPreviewPane,
 	setOpenPreviewPane,
+	onClose,
+	onFocus,
 }: {
 	provider: ProviderInterface;
 	number: number;
 	currentlyOpenPreviewPane: number;
 	setOpenPreviewPane: (num: number) => void;
+	onClose?: () => void;
+	onFocus?: () => void;
 }) {
 	const isPreviewOpen = currentlyOpenPreviewPane === number;
 	const contentRef = React.useRef<HTMLDivElement>(null);
 
 	const [shownUrl, setShownUrl] = React.useState(null);
-	// this did not work not sure why
-	// set a timer effect every second to check if the webview is can go back
+
 	React.useEffect(() => {
 		const interval = setInterval(() => {
-			// @ts-ignore
-			const newUrl = provider.getWebview()?.src;
-			if (newUrl !== shownUrl) setShownUrl(newUrl);
-		}, 1000);
+			const newUrl = (provider.getWebview() as any)?.src;
+			if (newUrl && newUrl !== shownUrl) setShownUrl(newUrl);
+		}, 1500);
 		return () => clearInterval(interval);
-	});
+	}, [shownUrl, provider]);
 
 	// this did not work not sure why
 	// // set a timer effect every second to check if the webview is can go back
@@ -100,46 +104,82 @@ export default function Pane({
 	}
 
 	return (
-		<div key={provider.paneId()} className="page darwin group">
-			<div className="hidden powerbar group-hover:block">
-				<Button
-					className="text-xs shadow-2xl"
-					onClick={() => {
-						setOpenPreviewPane(number);
-						console.log('zooming in on ', provider);
-						// @ts-ignore
-						const zoomLevel = provider?.getWebview()?.getZoomLevel() + 2;
-						// @ts-ignore
-						provider.getWebview()?.setZoomLevel(zoomLevel);
-					}}
-					variant="ghost"
-				>
-					<svg
-						width="15"
-						height="15"
-						viewBox="0 0 15 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
+		<div key={provider.paneId()} className="page darwin group flex flex-col h-full bg-slate-900 border-r border-slate-800 last:border-r-0">
+			{/* Dedicated Pane Header */}
+			<div className="flex items-center justify-between px-2.5 py-1.5 bg-slate-850 bg-slate-900 border-b border-slate-700/60 text-slate-200 select-none z-10 shrink-0">
+				<div className="flex items-center space-x-2 min-w-0">
+					<span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+					<button
+						onClick={onFocus}
+						className="font-semibold text-xs text-slate-200 hover:text-blue-400 transition flex items-center space-x-1 truncate text-left"
+						title={`Focus on ${provider.shortName} (Cmd+${number})`}
 					>
-						<path
-							d="M11.5 3.04999C11.7485 3.04999 11.95 3.25146 11.95 3.49999V7.49999C11.95 7.74852 11.7485 7.94999 11.5 7.94999C11.2515 7.94999 11.05 7.74852 11.05 7.49999V4.58639L4.58638 11.05H7.49999C7.74852 11.05 7.94999 11.2515 7.94999 11.5C7.94999 11.7485 7.74852 11.95 7.49999 11.95L3.49999 11.95C3.38064 11.95 3.26618 11.9026 3.18179 11.8182C3.0974 11.7338 3.04999 11.6193 3.04999 11.5L3.04999 7.49999C3.04999 7.25146 3.25146 7.04999 3.49999 7.04999C3.74852 7.04999 3.94999 7.25146 3.94999 7.49999L3.94999 10.4136L10.4136 3.94999L7.49999 3.94999C7.25146 3.94999 7.04999 3.74852 7.04999 3.49999C7.04999 3.25146 7.25146 3.04999 7.49999 3.04999L11.5 3.04999Z"
-							fill="currentColor"
-							fillRule="evenodd"
-							clipRule="evenodd"
-						></path>
-					</svg>{' '}
-					{CmdOrCtrlKey} + {number}
-				</Button>
+						<span className="truncate">{provider.fullName || provider.shortName}</span>
+						<span className="text-slate-400 font-mono text-[10px] shrink-0">
+							({CmdOrCtrlKey}+{number})
+						</span>
+					</button>
+				</div>
+				<div className="flex items-center space-x-0.5 shrink-0">
+					<button
+						onClick={() => {
+							const webview = provider.getWebview() as any;
+							if (typeof webview?.refresh === 'function') webview.refresh();
+							else webview?.reload();
+						}}
+						title="Reload this chat"
+						className="p-1 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition"
+					>
+						<ReloadIcon className="w-3.5 h-3.5" />
+					</button>
+					<button
+						onClick={() => {
+							const webview = provider.getWebview() as any;
+							if (webview?.getZoomLevel) webview.setZoomLevel(webview.getZoomLevel() + 1);
+						}}
+						title="Zoom In"
+						className="p-1 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition"
+					>
+						<ZoomInIcon className="w-3.5 h-3.5" />
+					</button>
+					<button
+						onClick={() => {
+							const webview = provider.getWebview() as any;
+							if (webview?.getZoomLevel) webview.setZoomLevel(webview.getZoomLevel() - 1);
+						}}
+						title="Zoom Out"
+						className="p-1 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition"
+					>
+						<ZoomOutIcon className="w-3.5 h-3.5" />
+					</button>
+					<button
+						onClick={() => setOpenPreviewPane(number)}
+						title="Full Screen Focus"
+						className="p-1 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition"
+					>
+						<EnterFullScreenIcon className="w-3.5 h-3.5" />
+					</button>
+					{onClose && (
+						<button
+							onClick={onClose}
+							title={`Close ${provider.shortName}`}
+							className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition ml-0.5"
+						>
+							<Cross2Icon className="w-3.5 h-3.5" />
+						</button>
+					)}
+				</div>
 			</div>
+
 			<Dialog
 				open={isPreviewOpen}
 				onOpenChange={() => {
 					setOpenPreviewPane(0);
 					// zoom out when dropping out of preview
-					provider
-						.getWebview()
-						// @ts-ignore
-						.setZoomLevel(provider.getWebview().getZoomLevel() - 2);
+					const webview = provider.getWebview() as any;
+					if (webview?.getZoomLevel) {
+						webview.setZoomLevel(webview.getZoomLevel() - 2);
+					}
 				}}
 			>
 				<DialogXContent
@@ -151,34 +191,28 @@ export default function Pane({
 							{provider.fullName}
 							<div className="flex">
 								<XButton
-									tooltip={`Zoom in`} //: ${CmdOrCtrlKey} + =`}
+									tooltip={`Zoom in`}
 									onClick={() => {
-										provider
-											.getWebview()
-											// @ts-ignore
-											.setZoomLevel(provider.getWebview().getZoomLevel() + 1);
+										const webview = provider.getWebview() as any;
+										if (webview?.getZoomLevel) webview.setZoomLevel(webview.getZoomLevel() + 1);
 									}}
 								>
 									<ZoomInIcon />
 								</XButton>
 								<XButton
-									tooltip={`Zoom out`} //: ${CmdOrCtrlKey} + -`}
+									tooltip={`Zoom out`}
 									onClick={() => {
-										provider
-											.getWebview()
-											// @ts-ignore
-											.setZoomLevel(provider.getWebview().getZoomLevel() - 1);
+										const webview = provider.getWebview() as any;
+										if (webview?.getZoomLevel) webview.setZoomLevel(webview.getZoomLevel() - 1);
 									}}
 								>
 									<ZoomOutIcon />
 								</XButton>
 								<XButton
-									tooltip={`Reset Zoom`} // : ${CmdOrCtrlKey} + 0`}
+									tooltip={`Reset Zoom`}
 									onClick={() => {
-										provider
-											.getWebview()
-											// @ts-ignore
-											.setZoomLevel(0);
+										const webview = provider.getWebview() as any;
+										if (webview?.setZoomLevel) webview.setZoomLevel(0);
 									}}
 								>
 									<MagnifyingGlassIcon />
@@ -187,10 +221,10 @@ export default function Pane({
 							<Input type="url" value={shownUrl || ''} readOnly={true} />
 							<div className="flex">
 								<XButton
-									tooltip={`Reload window`} // : ${CmdOrCtrlKey} + R`}
+									tooltip={`Reload window`}
 									className="mr-4"
 									onClick={() => {
-										const webview = provider.getWebview();
+										const webview = provider.getWebview() as any;
 										if (typeof webview?.refresh === 'function') {
 											webview?.refresh();
 										} else {
@@ -201,17 +235,17 @@ export default function Pane({
 									<ReloadIcon />
 								</XButton>
 								<XButton
-									tooltip={`Go Back`} // : ${CmdOrCtrlKey} + H`}
+									tooltip={`Go Back`}
 									onClick={() => {
-										provider.getWebview()?.goBack();
+										(provider.getWebview() as any)?.goBack();
 									}}
 								>
 									<ArrowLeftIcon />
 								</XButton>
 								<XButton
-									tooltip={`Go forward`} // : ${CmdOrCtrlKey} + L`}
+									tooltip={`Go forward`}
 									onClick={() => {
-										provider.getWebview()?.goForward();
+										(provider.getWebview() as any)?.goForward();
 									}}
 								>
 									<ArrowRightIcon />
@@ -231,20 +265,22 @@ export default function Pane({
 					</DialogHeader>
 				</DialogXContent>
 			</Dialog>
-			<webview
-				// @ts-ignore - we need this to be here or it will not show up in electron and then the allowpopups doesnt work
-				allowpopups="true"
-				id={provider.webviewId}
-				src={provider.url}
-				className={
-					isPreviewOpen
-						? 'fixed pointer-events-auto left-[5%] top-[10%] z-[100] grid w-10/12 gap-4 p-2 duration-200 sm:rounded-lg rounded-xl h-[85vh]'
-						: ''
-				}
-				useragent={
-					provider.getUserAgent() ? provider.getUserAgent() : undefined
-				}
-			/>
+			<div className="relative flex-1 w-full h-full overflow-hidden">
+				<webview
+					// @ts-ignore
+					allowpopups="true"
+					id={provider.webviewId}
+					src={provider.url}
+					className={
+						isPreviewOpen
+							? 'fixed pointer-events-auto left-[5%] top-[10%] z-[100] grid w-10/12 gap-4 p-2 duration-200 sm:rounded-lg rounded-xl h-[85vh] bg-white shadow-2xl'
+							: 'absolute inset-0 w-full h-full'
+					}
+					useragent={
+						provider.getUserAgent() ? provider.getUserAgent() : undefined
+					}
+				/>
+			</div>
 		</div>
 	);
 }

@@ -81,26 +81,16 @@ body {
 }
 
 .page {
-	background: #eeeeee;
-	/* overflow: auto; */
-	/* disabled because its quite buggy */
-	/* resize: both;  */
+	background: #0f172a;
 	width: 100%;
-	height: calc(
-		100vh - var(--titlebar-height) - var(--superprompt-height) - 2rem
-	);
-	/* margin: 0 auto; */
+	height: 100%;
 	position: relative;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 }
 
 webview {
-	/* overflow: hidden; */
-	position: absolute;
-	left: 0;
-	width: 100%;
-	height: calc(
-		100vh - var(--titlebar-height) - var(--superprompt-height) - 2rem
-	);
 	display: inline-flex !important;
 }
 

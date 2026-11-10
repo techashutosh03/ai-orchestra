@@ -10,25 +10,28 @@ import { CmdOrCtrlKey, getEnabledProviders } from 'lib/utils';
 import './App.css';
 import { BrowserPane } from './browserPane';
 import { ProviderInterface } from 'lib/types';
-import { TitleBar } from './TitleBar';
+import { TopNav } from './TopNav';
 import SettingsMenu from './components/settings';
 
 // @ts-ignore
 export type paneInfo = { webviewId: string; shortName: string };
-const defaultPaneList = getEnabledProviders(
-	allProviders as ProviderInterface[],
-).map((x) => ({
-	webviewId: x.webviewId,
-	shortName: x.shortName,
-})); // in future we will have to disconnect the provider from the webview Id
+const defaultPaneList: paneInfo[] = [
+	{ webviewId: 'webviewOAI', shortName: 'ChatGPT' },
+	{ webviewId: 'webviewCLAUDE2', shortName: 'Claude' },
+];
+
 const storedPaneList: paneInfo[] = window.electron.electronStore.get(
 	'paneList',
 	defaultPaneList,
 );
 
+// If user has 5 crammed panes saved from before, default to Duo so it's spacious
+const initialPaneList = storedPaneList.length > 3 ? defaultPaneList : storedPaneList;
+
 export default function Layout() {
 	const [superprompt, setSuperprompt] = React.useState('');
-	const [paneList, setPaneList] = React.useState(storedPaneList);
+	const [paneList, setPaneList] = React.useState(initialPaneList);
+	const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
 	const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
 	const originalAlwaysOnTop = window.electron.browserWindow.getAlwaysOnTop();
@@ -41,9 +44,13 @@ export default function Layout() {
 
 	const enabledProviders = paneList.map(
 		(x) => allProviders.find((y) => y.webviewId === (x.webviewId || x.id))!,
-	);
+	).filter(Boolean);
 
-	const [sizes, setSizes] = React.useState(updateSplitSizes(enabledProviders));
+	const [sizes, setSizes] = React.useState(updateSplitSizes(enabledProviders, focusedIndex));
+
+	React.useEffect(() => {
+		setSizes(updateSplitSizes(enabledProviders, focusedIndex));
+	}, [focusedIndex, paneList]);
 
 	React.useEffect(() => {
 		window.electron.electronStore.set('paneList', paneList);
@@ -172,21 +179,14 @@ export default function Layout() {
 					event.code[event.code.length - 1] in paneShortcutKeys))
 		) {
 			const digit = +event.key || +event.code[event.code.length - 1];
-			if (paneShortcutKeys[digit] === null) {
-				window.electron.browserWindow.reload(); // this is a hack; setSizes by itself does not seem to update the splits, seems like a bug, but we dont have a choice here
-			} else {
-				setOpenPreviewPane(digit);
-				const previewProvider = enabledProviders.find(
-					(provider) =>
-						provider.webviewId === storedPaneList[digit - 1].webviewId,
-				);
-				// @ts-ignore
-				const zoomLevel = previewProvider.getWebview()?.getZoomLevel() + 2;
-				// @ts-ignore
-				previewProvider.getWebview().setZoomLevel(zoomLevel);
+			const targetIdx = digit - 1;
+			if (targetIdx >= 0 && targetIdx < enabledProviders.length) {
+				event.preventDefault();
+				setFocusedIndex(focusedIndex === targetIdx ? null : targetIdx);
 			}
 		} else if (isCmdOrCtrl && isShift && event.key.toLowerCase() === 'a') {
-			window.electron.browserWindow.reload();
+			event.preventDefault();
+			setFocusedIndex(null);
 		} else if (
 			(isCmdOrCtrl && event.key === '+') ||
 			(isCmdOrCtrl && event.key === '=')
@@ -238,23 +238,30 @@ export default function Layout() {
 	}
 
 	return (
-		<div id="windowRef" className="flex flex-col" ref={windowRef}>
-			<TitleBar {...{ isAlwaysOnTop, toggleIsAlwaysOnTop }} />
+		<div id="windowRef" className="flex flex-col h-screen overflow-hidden bg-slate-950" ref={windowRef}>
+			<TopNav
+				paneList={paneList}
+				setPaneList={setPaneList}
+				allProviders={allProviders as ProviderInterface[]}
+				focusedIndex={focusedIndex}
+				setFocusedIndex={setFocusedIndex}
+				isAlwaysOnTop={isAlwaysOnTop}
+				toggleIsAlwaysOnTop={toggleIsAlwaysOnTop}
+				openSettings={() => setIsSettingsOpen(true)}
+			/>
 			<SettingsMenu
 				open={isSettingsOpen}
 				onClose={() => setIsSettingsOpen(false)}
 			/>
 			<Split
 				sizes={sizes}
-				minSize={0}
+				minSize={focusedIndex !== null ? 0 : 200}
 				expandToMin={false}
-				gutterSize={3}
+				gutterSize={focusedIndex !== null ? 0 : 3}
 				gutterAlign="center"
-				// snapOffset={30}
 				dragInterval={1}
 				direction="horizontal"
-				// cursor="col-resize"
-				className="flex"
+				className="flex flex-1 overflow-hidden"
 			>
 				{enabledProviders.map((provider, index) => (
 					<Pane
@@ -262,46 +269,57 @@ export default function Layout() {
 						number={index + 1}
 						currentlyOpenPreviewPane={currentlyOpenPreviewPane}
 						setOpenPreviewPane={setOpenPreviewPane}
-						key={index}
+						onClose={
+							paneList.length > 1
+								? () => {
+										const next = paneList.filter(
+											(p) => p.webviewId !== provider.webviewId,
+										);
+										setPaneList(next);
+										if (focusedIndex !== null && focusedIndex >= next.length) {
+											setFocusedIndex(next.length - 1);
+										}
+								  }
+								: undefined
+						}
+						onFocus={() => {
+							setFocusedIndex(focusedIndex === index ? null : index);
+						}}
+						key={provider.webviewId}
 					/>
 				))}
 			</Split>
 			<div
-				// not a form, because the form submit causes a reload for some reason even if we preventdefault.
 				ref={formRef}
 				id="form"
-				className=""
-				// onKeyDown={handleSubmit}
+				className="border-t border-slate-800 bg-slate-900 shadow-2xl shrink-0"
 			>
-				<div id="form-wrapper">
+				<div id="form-wrapper" className="flex w-full items-center px-4 py-2 space-x-3">
 					<textarea
-						rows={4}
-						className="resize-none"
+						rows={2}
+						className="resize-none flex-1 bg-slate-800/90 text-slate-100 placeholder:text-slate-400 rounded-lg px-3 py-2 text-sm border border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500 font-sans"
 						id="prompt"
 						value={superprompt}
 						onChange={(e) => setSuperprompt(e.target.value)}
 						onKeyDown={onKeyDown}
 						name="prompt"
-						placeholder={`Enter a superprompt here.
-- Quick Open: ${CmdOrCtrlKey}+Shift+G or Submit: ${CmdOrCtrlKey}+Enter
-- Switch windows: ${CmdOrCtrlKey}+1/2/3/etc, or Global Resize/Pin: ${CmdOrCtrlKey} -/+/p, or Back/Fwd: ${CmdOrCtrlKey} H/L
-- New chat: ${CmdOrCtrlKey}+R or Reset windows evenly: ${CmdOrCtrlKey}+Shift+A`}
+						placeholder={`Ask all active models... (Press ${CmdOrCtrlKey}+Enter to send, ${CmdOrCtrlKey}+1/2 to focus a model)`}
 					/>
-					<div className="flex items-center justify-center p-4 space-x-2">
+					<div className="flex items-center space-x-2 shrink-0">
 						<button
-							className="flex items-center justify-center w-12 h-12 p-1 text-white transition bg-gray-600 rounded-lg shadow-inner hover:bg-gray-200"
+							className="flex items-center justify-center w-10 h-10 text-white transition bg-blue-600 rounded-lg shadow-md hover:bg-blue-500 active:scale-95"
 							id="btn"
 							onClick={submitProviders}
 							type="submit"
-							title={`${CmdOrCtrlKey}+Enter to submit`}
+							title={`Send to all active models (${CmdOrCtrlKey}+Enter)`}
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
-								strokeWidth="1.5"
+								strokeWidth="2"
 								stroke="currentColor"
-								className="w-6 h-6"
+								className="w-5 h-5 stroke-white"
 							>
 								<path
 									strokeLinecap="round"
