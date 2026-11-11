@@ -131,11 +131,11 @@
 		"webpack-merge": "^5.9.0"
 	},
 	"build": {
-		"productName": "GodMode",
-		"appId": "org.smol.GodMode",
+		"productName": "AI Orchestra",
+		"appId": "com.techashutosh03.aiorchestra",
 		"asar": true,
 		"asarUnpack": "**\\*.{node,dll}",
-		"copyright": "Copyright 2023 smol.ai/godmode",
+		"copyright": "Copyright 2024 AI Orchestra",
 		"files": [
 			"dist",
 			"node_modules",
